@@ -16,8 +16,12 @@ export default function AdminOrdersPage() {
 
   async function fetchOrders() {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      const res = await fetch('/api/admin/orders');
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setOrders(json.data);
+      } else {
+        // Fallback demo data
         setOrders([
           {
             id: '1', order_number: 'MP-20260920-AB1CD', buyer_name: 'Ahmad Fadli', buyer_email: 'ahmad@mail.com',
@@ -40,19 +44,7 @@ export default function AdminOrdersPage() {
             product: { name: 'Canva Pro' },
           },
         ]);
-        setLoading(false);
-        return;
       }
-
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      const { data } = await supabase
-        .from('orders')
-        .select('*, product:products(name)')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      setOrders(data || []);
     } catch (err) {
       console.error(err);
     }

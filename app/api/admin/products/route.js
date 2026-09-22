@@ -190,6 +190,56 @@ export async function PATCH(request) {
   }
 }
 
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('id');
+
+    if (!productId) {
+      return NextResponse.json({ error: 'Product ID wajib' }, { status: 400 });
+    }
+
+    const supabase = createClientServer();
+
+    // Check if product has any sold stock (prevent deleting products with active orders)
+    const { count: soldCount } = await supabase
+      .from('account_stock')
+      .select('*', { count: 'exact', head: true })
+      .eq('product_id', productId)
+      .eq('status', 'sold');
+
+    if (soldCount && soldCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak bisa hapus produk yang sudah memiliki penjualan. Nonaktifkan saja.' },
+        { status: 400 }
+      );
+    }
+
+    // Delete available stock first (cascade should handle this, but be safe)
+    await supabase
+      .from('account_stock')
+      .delete()
+      .eq('product_id', productId)
+      .eq('status', 'available');
+
+    // Delete the product
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
+
+    if (error) {
+      console.error('Delete product error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Products DELETE error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 async function uploadIcon(supabase, file, slug) {
   try {
     const ext = file.name?.split('.').pop() || 'png';

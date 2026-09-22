@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS orders (
   buyer_name TEXT NOT NULL,
   buyer_email TEXT NOT NULL,
   buyer_whatsapp TEXT NOT NULL,
+  buyer_notes TEXT,
   amount INTEGER NOT NULL,
   status TEXT DEFAULT 'pending'
     CHECK (status IN ('pending', 'paid', 'delivered', 'expired', 'failed')),
@@ -147,6 +148,56 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 6. Decrement Stock Count Function (for manual delete)
+CREATE OR REPLACE FUNCTION decrement_stock_count(p_product_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE products
+  SET stock_count = GREATEST(stock_count - 1, 0),
+      updated_at = now()
+  WHERE id = p_product_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Bulk Delete Available Stock Function (for admin bulk delete)
+CREATE OR REPLACE FUNCTION bulk_delete_available_stock(p_product_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  -- Count how many will be deleted
+  SELECT COUNT(*) INTO v_count
+  FROM account_stock
+  WHERE product_id = p_product_id AND status = 'available';
+
+  -- Delete all available stock for this product
+  DELETE FROM account_stock
+  WHERE product_id = p_product_id AND status = 'available';
+
+  -- Update stock counter
+  UPDATE products
+  SET stock_count = GREATEST(stock_count - v_count, 0),
+      updated_at = now()
+  WHERE id = p_product_id;
+
+  RETURN v_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 8. Auto-update updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_products_updated_at
+  BEFORE UPDATE ON products
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================================
 -- Row Level Security (RLS)
 -- ============================================================
@@ -182,6 +233,37 @@ CREATE POLICY "Orders are manageable by service role"
   ON orders FOR UPDATE USING (auth.role() = 'service_role');
 
 -- ============================================================
+-- Storage Bucket Setup
+-- ============================================================
+-- NOTE: Run this in Supabase SQL Editor or create via Dashboard:
+--
+-- 1. Go to Supabase Dashboard → Storage
+-- 2. Create a new bucket named "product-icons"
+-- 3. Set it to PUBLIC
+-- 4. Allowed MIME types: image/png, image/jpeg, image/webp, image/svg+xml, image/gif
+-- 5. Max file size: 2MB
+--
+-- Or run via SQL:
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'product-icons',
+  'product-icons',
+  true,
+  2097152,
+  ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage RLS policies
+CREATE POLICY "Anyone can view product icons"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'product-icons');
+
+CREATE POLICY "Service role can manage product icons"
+  ON storage.objects FOR ALL
+  USING (bucket_id = 'product-icons');
+
+-- ============================================================
 -- Seed Data (Optional Demo Products)
 -- ============================================================
 
@@ -196,3 +278,11 @@ INSERT INTO products (name, slug, description, price, duration, category, is_act
   ('Figma Professional', 'figma-pro', 'Kolaborasi desain UI/UX real-time dengan unlimited projects dan version history.', 75000, '1 Bulan', 'Design', true, 0),
   ('Notion Plus', 'notion-plus', 'Workspace all-in-one untuk catatan, proyek, database, dan kolaborasi tim.', 40000, '1 Bulan', 'Productivity', true, 0)
 ON CONFLICT (slug) DO NOTHING;
+
+-- ============================================================
+-- MIGRATION: If tables already exist, run these ALTER statements
+-- ============================================================
+-- Add buyer_notes column to orders (if table already exists):
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_notes TEXT;
+--
+-- Create the new RPC functions by running sections 6, 7, 8 above.

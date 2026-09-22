@@ -58,14 +58,42 @@ export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
     const stockId = searchParams.get('id');
-
-    if (!stockId) {
-      return NextResponse.json({ error: 'Stock ID wajib' }, { status: 400 });
-    }
+    const productId = searchParams.get('productId');
 
     const supabase = createClientServer();
 
-    // Only allow deleting 'available' stock
+    // Bulk delete all available stock for a product
+    if (productId) {
+      const { data: count, error } = await supabase.rpc('bulk_delete_available_stock', {
+        p_product_id: productId,
+      });
+
+      if (error) {
+        console.error('Bulk delete stock error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, count });
+    }
+
+    // Single delete
+    if (!stockId) {
+      return NextResponse.json({ error: 'Stock ID atau Product ID wajib' }, { status: 400 });
+    }
+
+    // First, get the stock item to know its product_id
+    const { data: stockItem, error: fetchError } = await supabase
+      .from('account_stock')
+      .select('id, product_id')
+      .eq('id', stockId)
+      .eq('status', 'available')
+      .single();
+
+    if (fetchError || !stockItem) {
+      return NextResponse.json({ error: 'Stok tidak ditemukan atau sudah terjual' }, { status: 404 });
+    }
+
+    // Delete the stock item
     const { error } = await supabase
       .from('account_stock')
       .delete()
@@ -77,11 +105,8 @@ export async function DELETE(request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Recalculate stock count for the product
-    // First get product_id from this stock
-    // Since we deleted it, we need to update product counts
-    // The trigger or a manual recount is needed
-    // For simplicity, we'll let the product stock_count be handled
+    // Decrement stock_count on the product
+    await supabase.rpc('decrement_stock_count', { p_product_id: stockItem.product_id });
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -89,3 +114,4 @@ export async function DELETE(request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

@@ -6,7 +6,7 @@ import { generateOrderNumber } from '@/lib/utils';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { productId, buyerName, buyerEmail, buyerWhatsapp } = body;
+    const { productId, buyerName, buyerEmail, buyerWhatsapp, buyerNotes } = body;
 
     // Validate input
     if (!productId || !buyerName || !buyerEmail || !buyerWhatsapp) {
@@ -59,6 +59,7 @@ export async function POST(request) {
         buyer_name: buyerName,
         buyer_email: buyerEmail,
         buyer_whatsapp: buyerWhatsapp,
+        buyer_notes: buyerNotes || null,
         amount: product.price,
         status: 'pending',
         midtrans_order_id: orderNumber,

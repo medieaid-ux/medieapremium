@@ -199,11 +199,76 @@ export default function AdminDashboardPage() {
   const [chartData, setChartData] = useState([]);
 
   // Generate chart data when period or type changes
-  useEffect(() => {
-    // In production, fetch from Supabase with date aggregation
-    const data = generateDemoData(chartPeriod, activeChart);
-    setChartData(data);
+  const fetchChartData = useCallback(async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+        setChartData(generateDemoData(chartPeriod, activeChart));
+        return;
+      }
+
+      const { createClientBrowser } = await import('@/lib/supabase');
+      const supabase = createClientBrowser();
+
+      const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : chartPeriod === '90d' ? 90 : 365;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('amount, status, created_at, buyer_email')
+        .gte('created_at', startDate.toISOString())
+        .in('status', ['delivered', 'paid']);
+
+      if (!orders || orders.length === 0) {
+        setChartData(generateDemoData(chartPeriod, activeChart));
+        return;
+      }
+
+      const isMonthly = chartPeriod === '12m';
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+      // Build date buckets
+      const buckets = {};
+      const count = isMonthly ? 12 : days;
+      for (let i = 0; i < count; i++) {
+        const d = new Date();
+        if (isMonthly) {
+          d.setMonth(d.getMonth() - (count - 1 - i));
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          buckets[key] = { label: months[d.getMonth()], value: 0, emails: new Set() };
+        } else {
+          d.setDate(d.getDate() - (count - 1 - i));
+          const key = d.toISOString().slice(0, 10);
+          buckets[key] = { label: `${d.getDate()}/${d.getMonth() + 1}`, value: 0, emails: new Set() };
+        }
+      }
+
+      // Fill buckets with real data
+      orders.forEach(o => {
+        const key = isMonthly ? o.created_at.slice(0, 7) : o.created_at.slice(0, 10);
+        if (buckets[key]) {
+          if (activeChart === 'revenue') {
+            buckets[key].value += o.amount;
+          } else if (activeChart === 'orders') {
+            buckets[key].value += 1;
+          } else {
+            buckets[key].emails.add(o.buyer_email);
+            buckets[key].value = buckets[key].emails.size;
+          }
+        }
+      });
+
+      setChartData(Object.values(buckets).map(b => ({ label: b.label, value: b.value })));
+    } catch (err) {
+      console.error('Chart data error:', err);
+      setChartData(generateDemoData(chartPeriod, activeChart));
+    }
   }, [chartPeriod, activeChart]);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
 
   useEffect(() => {
     async function fetchStats() {

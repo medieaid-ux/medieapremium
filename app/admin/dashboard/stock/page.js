@@ -115,6 +115,36 @@ export default function AdminStockPage() {
       });
       if (res.ok) {
         fetchStock();
+        fetchProducts();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function bulkDeleteStock() {
+    const product = products.find(p => p.name === filterProduct);
+    if (!product) {
+      alert('Pilih produk terlebih dahulu di filter');
+      return;
+    }
+    const availableCount = stockList.filter(s => s.product?.name === filterProduct && s.status === 'available').length;
+    if (availableCount === 0) {
+      alert('Tidak ada stok available untuk dihapus');
+      return;
+    }
+    if (!confirm(`Yakin hapus SEMUA ${availableCount} stok available untuk "${filterProduct}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/stock?productId=${product.id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (res.ok) {
+        alert(`✅ Berhasil hapus ${json.count} stok`);
+        fetchStock();
+        fetchProducts();
+      } else {
+        alert(`❌ Gagal: ${json.error}`);
       }
     } catch (err) {
       console.error(err);
@@ -126,6 +156,9 @@ export default function AdminStockPage() {
     if (filterStatus && s.status !== filterStatus) return false;
     return true;
   });
+  const availableInFilter = filterProduct
+    ? stockList.filter(s => s.product?.name === filterProduct && s.status === 'available').length
+    : 0;
 
   return (
     <div>
@@ -255,6 +288,15 @@ export default function AdminStockPage() {
               <option value="available">Available</option>
               <option value="sold">Sold</option>
             </select>
+            {filterProduct && availableInFilter > 0 && (
+              <button
+                className="btn btn--danger btn--sm"
+                onClick={bulkDeleteStock}
+                title={`Hapus semua ${availableInFilter} stok available untuk ${filterProduct}`}
+              >
+                🗑️ Hapus Semua Available ({availableInFilter})
+              </button>
+            )}
           </div>
         </div>
 

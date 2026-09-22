@@ -160,6 +160,24 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function deleteProduct(product) {
+    if (!confirm(`Yakin hapus produk "${product.name}"? Stok yang tersedia juga akan terhapus.`)) return;
+    try {
+      const res = await fetch(`/api/admin/products?id=${product.id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (res.ok) {
+        fetchProducts();
+      } else {
+        alert(`Gagal hapus: ${json.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghapus produk');
+    }
+  }
+
   return (
     <div>
       <div className="admin-header">
@@ -230,9 +248,14 @@ export default function AdminProductsPage() {
                     </button>
                   </td>
                   <td>
-                    <button className="btn btn--ghost btn--sm" onClick={() => openEditModal(product)}>
-                      ✏️ Edit
-                    </button>
+                    <div style={{ display: 'flex', gap: 'var(--sp-1)' }}>
+                      <button className="btn btn--ghost btn--sm" onClick={() => openEditModal(product)}>
+                        ✏️ Edit
+                      </button>
+                      <button className="btn btn--danger btn--sm" onClick={() => deleteProduct(product)}>
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
