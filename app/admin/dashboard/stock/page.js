@@ -23,19 +23,17 @@ export default function AdminStockPage() {
 
   async function fetchProducts() {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      const res = await fetch('/api/admin/products');
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setProducts(json.data.map(p => ({ id: p.id, name: p.name })));
+      } else {
         setProducts([
           { id: '1', name: 'ChatGPT Pro' },
           { id: '2', name: 'Netflix Premium' },
           { id: '3', name: 'Canva Pro' },
         ]);
-        return;
       }
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      const { data } = await supabase.from('products').select('id, name').order('name');
-      setProducts(data || []);
     } catch (err) {
       console.error(err);
     }
@@ -43,26 +41,17 @@ export default function AdminStockPage() {
 
   async function fetchStock() {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      const res = await fetch('/api/admin/stock');
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setStockList(json.data);
+      } else {
         setStockList([
           { id: 's1', email: 'user1@chatgpt.com', password: '***', status: 'available', product: { name: 'ChatGPT Pro' }, created_at: new Date().toISOString() },
           { id: 's2', email: 'user2@netflix.com', password: '***', status: 'sold', product: { name: 'Netflix Premium' }, created_at: new Date(Date.now() - 86400000).toISOString() },
           { id: 's3', email: 'user3@canva.com', password: '***', status: 'available', product: { name: 'Canva Pro' }, created_at: new Date(Date.now() - 172800000).toISOString() },
         ]);
-        setLoading(false);
-        return;
       }
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      let query = supabase
-        .from('account_stock')
-        .select('*, product:products(name)')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      const { data } = await query;
-      setStockList(data || []);
     } catch (err) {
       console.error(err);
     }
@@ -92,30 +81,25 @@ export default function AdminStockPage() {
     setUploading(true);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
-        setUploadResult({ success: true, count: preview.accounts.length });
-        setStockText('');
-        setPreview({ accounts: [], errors: [] });
-        setUploading(false);
-        return;
-      }
-
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-
-      const { data, error } = await supabase.rpc('bulk_insert_stock', {
-        p_product_id: selectedProduct,
-        p_accounts: preview.accounts,
+      const res = await fetch('/api/admin/stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: selectedProduct,
+          accounts: preview.accounts,
+        }),
       });
 
-      if (error) {
-        setUploadResult({ success: false, error: error.message });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setUploadResult({ success: false, error: json.error });
       } else {
-        setUploadResult({ success: true, count: data });
+        setUploadResult({ success: true, count: json.count });
         setStockText('');
         setPreview({ accounts: [], errors: [] });
         fetchStock();
+        fetchProducts(); // refresh stock counts
       }
     } catch (err) {
       setUploadResult({ success: false, error: err.message });
@@ -126,13 +110,12 @@ export default function AdminStockPage() {
   async function deleteStock(stockId) {
     if (!confirm('Yakin hapus stok ini?')) return;
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') return;
-
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      await supabase.from('account_stock').delete().eq('id', stockId);
-      fetchStock();
+      const res = await fetch(`/api/admin/stock?id=${stockId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchStock();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -154,8 +137,8 @@ export default function AdminStockPage() {
       </div>
 
       {/* Bulk Upload Section */}
-      <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
-        <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)', marginBottom: 'var(--space-5)' }}>
+      <div className="card" style={{ marginBottom: 'var(--sp-8)' }}>
+        <h3 style={{ fontSize: 'var(--text-18)', fontWeight: 'var(--weight-semibold)', marginBottom: 'var(--sp-5)' }}>
           📤 Upload Stok Massal
         </h3>
 
@@ -176,7 +159,7 @@ export default function AdminStockPage() {
         <div className="form-group">
           <label className="form-label">
             Paste Daftar Akun
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 'var(--fw-normal)', marginLeft: 'var(--space-2)' }}>
+            <span style={{ color: 'var(--text-tertiary)', fontWeight: 'var(--weight-normal)', marginLeft: 'var(--sp-2)' }}>
               (Format: email|password|info_tambahan)
             </span>
           </label>
@@ -190,26 +173,26 @@ export default function AdminStockPage() {
 
         {/* Preview */}
         {(preview.accounts.length > 0 || preview.errors.length > 0) && (
-          <div style={{ marginBottom: 'var(--space-4)' }}>
+          <div style={{ marginBottom: 'var(--sp-4)' }}>
             {preview.accounts.length > 0 && (
               <div style={{
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'var(--accent-glow)',
+                padding: 'var(--sp-3) var(--sp-4)',
+                background: 'var(--accent-subtle)',
                 borderRadius: 'var(--radius-md)',
                 color: 'var(--accent)',
-                fontSize: 'var(--fs-sm)',
-                marginBottom: 'var(--space-2)',
+                fontSize: 'var(--text-13)',
+                marginBottom: 'var(--sp-2)',
               }}>
                 ✓ {preview.accounts.length} akun siap diupload
               </div>
             )}
             {preview.errors.length > 0 && (
               <div style={{
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'var(--danger-bg)',
+                padding: 'var(--sp-3) var(--sp-4)',
+                background: 'var(--danger-muted)',
                 borderRadius: 'var(--radius-md)',
                 color: 'var(--danger)',
-                fontSize: 'var(--fs-sm)',
+                fontSize: 'var(--text-13)',
               }}>
                 {preview.errors.map((err, i) => (
                   <div key={i}>⚠️ {err}</div>
@@ -222,12 +205,12 @@ export default function AdminStockPage() {
         {/* Upload Result */}
         {uploadResult && (
           <div style={{
-            padding: 'var(--space-3) var(--space-4)',
-            background: uploadResult.success ? 'var(--accent-glow)' : 'var(--danger-bg)',
+            padding: 'var(--sp-3) var(--sp-4)',
+            background: uploadResult.success ? 'var(--accent-subtle)' : 'var(--danger-muted)',
             borderRadius: 'var(--radius-md)',
             color: uploadResult.success ? 'var(--accent)' : 'var(--danger)',
-            fontSize: 'var(--fs-sm)',
-            marginBottom: 'var(--space-4)',
+            fontSize: 'var(--text-13)',
+            marginBottom: 'var(--sp-4)',
           }}>
             {uploadResult.success
               ? `✅ Berhasil upload ${uploadResult.count} akun!`
@@ -246,16 +229,16 @@ export default function AdminStockPage() {
 
       {/* Stock List */}
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <h3 style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-5)', flexWrap: 'wrap', gap: 'var(--sp-3)' }}>
+          <h3 style={{ fontSize: 'var(--text-18)', fontWeight: 'var(--weight-semibold)' }}>
             📋 Daftar Stok ({filteredStock.length})
           </h3>
-          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
             <select
               className="form-input form-select"
               value={filterProduct}
               onChange={(e) => setFilterProduct(e.target.value)}
-              style={{ width: 'auto', fontSize: 'var(--fs-sm)', padding: '6px 30px 6px 10px' }}
+              style={{ width: 'auto', fontSize: 'var(--text-13)', padding: '6px 30px 6px 10px' }}
             >
               <option value="">Semua Produk</option>
               {products.map((p) => (
@@ -266,7 +249,7 @@ export default function AdminStockPage() {
               className="form-input form-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              style={{ width: 'auto', fontSize: 'var(--fs-sm)', padding: '6px 30px 6px 10px' }}
+              style={{ width: 'auto', fontSize: 'var(--text-13)', padding: '6px 30px 6px 10px' }}
             >
               <option value="">Semua Status</option>
               <option value="available">Available</option>
@@ -294,7 +277,7 @@ export default function AdminStockPage() {
                   const statusColor = getStatusColor(stock.status);
                   return (
                     <tr key={stock.id}>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)' }}>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-12)' }}>
                         {stock.email}
                       </td>
                       <td>{stock.product?.name}</td>
@@ -306,7 +289,7 @@ export default function AdminStockPage() {
                           {stock.status}
                         </span>
                       </td>
-                      <td style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>
+                      <td style={{ fontSize: 'var(--text-12)', color: 'var(--text-tertiary)' }}>
                         {new Date(stock.created_at).toLocaleDateString('id-ID')}
                       </td>
                       <td>
@@ -323,7 +306,7 @@ export default function AdminStockPage() {
             </table>
           </div>
         ) : (
-          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+          <div className="empty-state" style={{ padding: 'var(--sp-8)' }}>
             <div className="empty-state__icon">🔑</div>
             <h3 className="empty-state__title">Belum ada stok</h3>
             <p className="empty-state__text">Upload stok akun di form di atas.</p>

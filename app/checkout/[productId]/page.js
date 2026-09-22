@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import Navbar from '@/components/Navbar';
 import { formatPrice, isValidEmail, isValidWhatsApp } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', whatsapp: '' });
   const [errors, setErrors] = useState({});
+  const [snapReady, setSnapReady] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -127,6 +129,13 @@ export default function CheckoutPage() {
     }
   };
 
+  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+  const hasMidtransKey = midtransClientKey && midtransClientKey !== 'your_client_key';
+  const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  const snapUrl = isProduction
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
   if (loading) {
     return (
       <>
@@ -167,23 +176,22 @@ export default function CheckoutPage() {
     <>
       <Navbar />
 
-      {/* Midtrans Snap Script */}
-      <script
-        src={
-          process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY && process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY !== 'your_client_key'
-            ? 'https://app.sandbox.midtrans.com/snap/snap.js'
-            : ''
-        }
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''}
-        async
-      />
+      {/* Midtrans Snap Script — using next/script for proper loading */}
+      {hasMidtransKey && (
+        <Script
+          src={snapUrl}
+          data-client-key={midtransClientKey}
+          strategy="lazyOnload"
+          onLoad={() => setSnapReady(true)}
+        />
+      )}
 
       <div className="checkout-page">
         <div className="container">
           <button
             className="btn btn--ghost mb-6"
             onClick={() => router.push('/')}
-            style={{ marginBottom: 'var(--space-6)' }}
+            style={{ marginBottom: 'var(--sp-6)' }}
           >
             ← Kembali
           </button>
@@ -194,9 +202,9 @@ export default function CheckoutPage() {
               <div className="card">
                 <h2
                   style={{
-                    fontSize: 'var(--fs-xl)',
-                    fontWeight: 'var(--fw-semibold)',
-                    marginBottom: 'var(--space-6)',
+                    fontSize: 'var(--text-20)',
+                    fontWeight: 'var(--weight-semibold)',
+                    marginBottom: 'var(--sp-6)',
                   }}
                 >
                   Data Pembeli
@@ -261,7 +269,7 @@ export default function CheckoutPage() {
                     type="submit"
                     className={`btn btn--primary btn--full btn--lg ${submitting ? 'btn--loading' : ''}`}
                     disabled={submitting}
-                    style={{ marginTop: 'var(--space-4)' }}
+                    style={{ marginTop: 'var(--sp-4)' }}
                   >
                     {submitting ? '' : '🔒 Bayar Sekarang'}
                   </button>
@@ -269,9 +277,9 @@ export default function CheckoutPage() {
                   <p
                     style={{
                       textAlign: 'center',
-                      fontSize: 'var(--fs-xs)',
+                      fontSize: 'var(--text-12)',
                       color: 'var(--text-tertiary)',
-                      marginTop: 'var(--space-3)',
+                      marginTop: 'var(--sp-3)',
                     }}
                   >
                     Pembayaran diproses secara aman oleh Midtrans
@@ -285,12 +293,12 @@ export default function CheckoutPage() {
               <div className="card">
                 <h3
                   style={{
-                    fontSize: 'var(--fs-sm)',
-                    fontWeight: 'var(--fw-semibold)',
+                    fontSize: 'var(--text-13)',
+                    fontWeight: 'var(--weight-semibold)',
                     color: 'var(--text-tertiary)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
-                    marginBottom: 'var(--space-5)',
+                    marginBottom: 'var(--sp-5)',
                   }}
                 >
                   Ringkasan Pesanan
@@ -300,9 +308,9 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 'var(--space-4)',
-                    marginBottom: 'var(--space-5)',
-                    paddingBottom: 'var(--space-5)',
+                    gap: 'var(--sp-4)',
+                    marginBottom: 'var(--sp-5)',
+                    paddingBottom: 'var(--sp-5)',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
@@ -311,26 +319,34 @@ export default function CheckoutPage() {
                       width: '52px',
                       height: '52px',
                       borderRadius: 'var(--radius-lg)',
-                      background: 'var(--bg-tertiary)',
+                      background: 'var(--bg-surface-2)',
+                      border: '1px solid var(--border)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.5rem',
+                      overflow: 'hidden',
+                      flexShrink: 0,
                     }}
                   >
-                    {product.category === 'AI Tools'
-                      ? '🤖'
-                      : product.category === 'Streaming'
-                      ? '🎬'
-                      : product.category === 'Design'
-                      ? '🎨'
-                      : '⚡'}
+                    {product.icon_url ? (
+                      <img src={product.icon_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '1.5rem' }}>
+                        {product.category === 'AI Tools'
+                          ? '🤖'
+                          : product.category === 'Streaming'
+                          ? '🎬'
+                          : product.category === 'Design'
+                          ? '🎨'
+                          : '⚡'}
+                      </span>
+                    )}
                   </div>
                   <div>
-                    <h4 style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)' }}>
+                    <h4 style={{ fontSize: 'var(--text-16)', fontWeight: 'var(--weight-semibold)' }}>
                       {product.name}
                     </h4>
-                    <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
+                    <p style={{ fontSize: 'var(--text-13)', color: 'var(--text-tertiary)' }}>
                       {product.duration || 'Sekali Pakai'}
                     </p>
                   </div>
@@ -340,8 +356,8 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    marginBottom: 'var(--space-3)',
-                    fontSize: 'var(--fs-sm)',
+                    marginBottom: 'var(--sp-3)',
+                    fontSize: 'var(--text-13)',
                   }}
                 >
                   <span style={{ color: 'var(--text-secondary)' }}>Harga</span>
@@ -352,8 +368,8 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    marginBottom: 'var(--space-5)',
-                    fontSize: 'var(--fs-sm)',
+                    marginBottom: 'var(--sp-5)',
+                    fontSize: 'var(--text-13)',
                   }}
                 >
                   <span style={{ color: 'var(--text-secondary)' }}>Biaya Admin</span>
@@ -364,10 +380,10 @@ export default function CheckoutPage() {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    paddingTop: 'var(--space-4)',
+                    paddingTop: 'var(--sp-4)',
                     borderTop: '1px solid var(--border)',
-                    fontSize: 'var(--fs-lg)',
-                    fontWeight: 'var(--fw-bold)',
+                    fontSize: 'var(--text-16)',
+                    fontWeight: 'var(--weight-bold)',
                   }}
                 >
                   <span>Total</span>
@@ -378,10 +394,10 @@ export default function CheckoutPage() {
               {/* Trust Badges */}
               <div
                 style={{
-                  marginTop: 'var(--space-5)',
+                  marginTop: 'var(--sp-5)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 'var(--space-3)',
+                  gap: 'var(--sp-3)',
                 }}
               >
                 {[
@@ -395,8 +411,8 @@ export default function CheckoutPage() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 'var(--space-3)',
-                      fontSize: 'var(--fs-sm)',
+                      gap: 'var(--sp-3)',
+                      fontSize: 'var(--text-13)',
                       color: 'var(--text-secondary)',
                     }}
                   >

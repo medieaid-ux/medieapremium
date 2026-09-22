@@ -91,8 +91,8 @@ export default function AdminLoginPage() {
             <p
               style={{
                 color: 'var(--danger)',
-                fontSize: 'var(--fs-sm)',
-                marginBottom: 'var(--space-4)',
+                fontSize: 'var(--text-13)',
+                marginBottom: 'var(--sp-4)',
                 textAlign: 'center',
               }}
             >

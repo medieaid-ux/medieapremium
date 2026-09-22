@@ -108,8 +108,8 @@ export default function SuccessPage() {
         <Navbar />
         <div className="success-page">
           <div className="success-card card">
-            <div className="skeleton" style={{ width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto var(--space-6)' }} />
-            <div className="skeleton skeleton--title" style={{ margin: '0 auto var(--space-3)' }} />
+            <div className="skeleton" style={{ width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto var(--sp-6)' }} />
+            <div className="skeleton skeleton--title" style={{ margin: '0 auto var(--sp-3)' }} />
             <div className="skeleton skeleton--text" style={{ width: '80%', margin: '0 auto' }} />
           </div>
         </div>
@@ -152,13 +152,13 @@ export default function SuccessPage() {
               <>
                 {/* Success State */}
                 <div className="success-icon">✅</div>
-                <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 'var(--fw-bold)', marginBottom: 'var(--space-2)' }}>
+                <h1 style={{ fontSize: 'var(--text-24)', fontWeight: 'var(--weight-bold)', marginBottom: 'var(--sp-2)' }}>
                   Pembayaran Berhasil!
                 </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginBottom: 'var(--space-2)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-13)', marginBottom: 'var(--sp-2)' }}>
                   Halo <strong>{order.buyer_name}</strong>, berikut data akun kamu:
                 </p>
-                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--fs-xs)' }}>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-12)' }}>
                   Order: {order.order_number}
                 </p>
 
@@ -209,11 +209,11 @@ export default function SuccessPage() {
                 {/* Notification info */}
                 <div
                   style={{
-                    marginTop: 'var(--space-5)',
-                    padding: 'var(--space-4)',
-                    background: 'var(--accent-glow)',
+                    marginTop: 'var(--sp-5)',
+                    padding: 'var(--sp-4)',
+                    background: 'var(--accent-subtle)',
                     borderRadius: 'var(--radius-lg)',
-                    fontSize: 'var(--fs-sm)',
+                    fontSize: 'var(--text-13)',
                     color: 'var(--accent)',
                     textAlign: 'center',
                   }}
@@ -224,11 +224,11 @@ export default function SuccessPage() {
                 {/* Warning */}
                 <div
                   style={{
-                    marginTop: 'var(--space-4)',
-                    padding: 'var(--space-4)',
-                    background: 'var(--danger-bg)',
+                    marginTop: 'var(--sp-4)',
+                    padding: 'var(--sp-4)',
+                    background: 'var(--danger-muted)',
                     borderRadius: 'var(--radius-lg)',
-                    fontSize: 'var(--fs-xs)',
+                    fontSize: 'var(--text-12)',
                     color: 'var(--danger)',
                     textAlign: 'center',
                   }}
@@ -239,24 +239,24 @@ export default function SuccessPage() {
             ) : isPending || isPaid ? (
               <>
                 {/* Waiting State */}
-                <div className="success-icon" style={{ background: 'var(--warning-bg)' }}>
+                <div className="success-icon" style={{ background: 'var(--warning-muted)' }}>
                   ⏳
                 </div>
-                <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 'var(--fw-bold)', marginBottom: 'var(--space-2)' }}>
+                <h1 style={{ fontSize: 'var(--text-24)', fontWeight: 'var(--weight-bold)', marginBottom: 'var(--sp-2)' }}>
                   {isPending ? 'Menunggu Pembayaran...' : 'Memproses Pesanan...'}
                 </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-13)' }}>
                   {isPending
                     ? 'Silakan selesaikan pembayaran. Halaman ini akan otomatis berubah begitu pembayaran diterima.'
                     : 'Pembayaran sudah diterima! Sedang memproses pengiriman akun...'}
                 </p>
                 {polling && (
-                  <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ marginTop: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-2)' }}>
                     <div style={{
                       width: '8px', height: '8px', borderRadius: '50%',
                       background: 'var(--accent)', animation: 'pulse 1s infinite'
                     }} />
-                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>
+                    <span style={{ fontSize: 'var(--text-12)', color: 'var(--text-tertiary)' }}>
                       Memantau status pembayaran...
                     </span>
                   </div>
@@ -265,13 +265,13 @@ export default function SuccessPage() {
             ) : (
               <>
                 {/* Failed/Expired State */}
-                <div className="success-icon" style={{ background: 'var(--danger-bg)' }}>
+                <div className="success-icon" style={{ background: 'var(--danger-muted)' }}>
                   ❌
                 </div>
-                <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 'var(--fw-bold)', marginBottom: 'var(--space-2)' }}>
+                <h1 style={{ fontSize: 'var(--text-24)', fontWeight: 'var(--weight-bold)', marginBottom: 'var(--sp-2)' }}>
                   Pembayaran {order.status === 'expired' ? 'Kedaluwarsa' : 'Gagal'}
                 </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-13)' }}>
                   Silakan coba lagi atau hubungi kami jika butuh bantuan.
                 </p>
               </>

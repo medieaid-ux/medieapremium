@@ -92,7 +92,7 @@ export default function AdminOrdersPage() {
           <h1 className="admin-header__title">Pesanan</h1>
           <p className="admin-header__subtitle">Riwayat semua transaksi</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
           <button
             className={`category-btn ${filterStatus === '' ? 'category-btn--active' : ''}`}
             onClick={() => setFilterStatus('')}
@@ -137,15 +137,15 @@ export default function AdminOrdersPage() {
                 const statusColor = getStatusColor(order.status);
                 return (
                   <tr key={order.id}>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-xs)' }}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-12)' }}>
                       {order.order_number}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 'var(--fw-medium)' }}>{order.buyer_name}</div>
-                      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>{order.buyer_email}</div>
+                      <div style={{ fontWeight: 'var(--weight-medium)' }}>{order.buyer_name}</div>
+                      <div style={{ fontSize: 'var(--text-12)', color: 'var(--text-tertiary)' }}>{order.buyer_email}</div>
                     </td>
                     <td>{order.product?.name}</td>
-                    <td style={{ color: 'var(--accent)', fontWeight: 'var(--fw-medium)' }}>
+                    <td style={{ color: 'var(--accent)', fontWeight: 'var(--weight-medium)' }}>
                       {formatPrice(order.amount)}
                     </td>
                     <td>
@@ -160,7 +160,7 @@ export default function AdminOrdersPage() {
                         {order.status}
                       </span>
                     </td>
-                    <td style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                    <td style={{ fontSize: 'var(--text-12)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
                       {getRelativeTime(order.created_at)}
                     </td>
                     <td>
@@ -194,7 +194,7 @@ export default function AdminOrdersPage() {
               <button className="modal__close" onClick={() => setSelectedOrder(null)}>✕</button>
             </div>
 
-            <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+            <div style={{ display: 'grid', gap: 'var(--sp-4)' }}>
               <InfoRow label="Order Number" value={selectedOrder.order_number} mono />
               <InfoRow label="Status">
                 <span className="badge" style={{
@@ -218,16 +218,16 @@ export default function AdminOrdersPage() {
 
               {selectedOrder.status === 'delivered' && (
                 <>
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--space-4)' }}>
-                    <h4 style={{ fontSize: 'var(--fs-sm)', fontWeight: 'var(--fw-semibold)', color: 'var(--accent)', marginBottom: 'var(--space-3)' }}>
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+                    <h4 style={{ fontSize: 'var(--text-13)', fontWeight: 'var(--weight-semibold)', color: 'var(--accent)', marginBottom: 'var(--sp-3)' }}>
                       Akun Yang Dikirim
                     </h4>
                     <InfoRow label="Email Akun" value={selectedOrder.delivered_email} mono />
-                    <div style={{ marginTop: 'var(--space-2)' }}>
+                    <div style={{ marginTop: 'var(--sp-2)' }}>
                       <InfoRow label="Password" value={selectedOrder.delivered_password} mono />
                     </div>
                     {selectedOrder.delivered_extra && (
-                      <div style={{ marginTop: 'var(--space-2)' }}>
+                      <div style={{ marginTop: 'var(--sp-2)' }}>
                         <InfoRow label="Info Tambahan" value={selectedOrder.delivered_extra} />
                       </div>
                     )}
@@ -252,13 +252,13 @@ export default function AdminOrdersPage() {
 
 function InfoRow({ label, value, mono, accent, children }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--fs-sm)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-13)' }}>
       <span style={{ color: 'var(--text-tertiary)' }}>{label}</span>
       {children || (
         <span style={{
           fontFamily: mono ? 'var(--font-mono)' : 'inherit',
           color: accent ? 'var(--accent)' : 'var(--text-primary)',
-          fontSize: mono ? 'var(--fs-xs)' : 'inherit',
+          fontSize: mono ? 'var(--text-12)' : 'inherit',
         }}>
           {value}
         </span>

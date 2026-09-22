@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatPrice } from '@/lib/utils';
 
 export default function AdminProductsPage() {
@@ -11,7 +11,10 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState({
     name: '', slug: '', description: '', price: '', duration: '', category: '', icon_url: '', is_active: true,
   });
+  const [iconFile, setIconFile] = useState(null);
+  const [iconPreview, setIconPreview] = useState(null);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef(null);
 
   const categories = ['AI Tools', 'Streaming', 'Design', 'Productivity', 'Education', 'Other'];
 
@@ -21,22 +24,21 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      const res = await fetch('/api/admin/products');
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setProducts(json.data);
+      } else {
+        // Fallback demo
         setProducts([
           { id: '1', name: 'ChatGPT Pro', slug: 'chatgpt-pro', price: 95000, duration: '1 Bulan', category: 'AI Tools', is_active: true, stock_count: 24 },
           { id: '2', name: 'Netflix Premium', slug: 'netflix-premium', price: 45000, duration: '1 Bulan', category: 'Streaming', is_active: true, stock_count: 18 },
           { id: '3', name: 'Canva Pro', slug: 'canva-pro', price: 35000, duration: '1 Bulan', category: 'Design', is_active: true, stock_count: 32 },
         ]);
-        setLoading(false);
-        return;
       }
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      const { data } = await supabase.from('products').select('*').order('created_at');
-      setProducts(data || []);
     } catch (err) {
       console.error(err);
+      setProducts([]);
     }
     setLoading(false);
   }
@@ -44,6 +46,8 @@ export default function AdminProductsPage() {
   function openAddModal() {
     setEditingProduct(null);
     setForm({ name: '', slug: '', description: '', price: '', duration: '', category: '', icon_url: '', is_active: true });
+    setIconFile(null);
+    setIconPreview(null);
     setShowModal(true);
   }
 
@@ -59,7 +63,30 @@ export default function AdminProductsPage() {
       icon_url: product.icon_url || '',
       is_active: product.is_active,
     });
+    setIconFile(null);
+    setIconPreview(product.icon_url || null);
     setShowModal(true);
+  }
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file maksimal 2MB');
+        return;
+      }
+      setIconFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => setIconPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeIcon() {
+    setIconFile(null);
+    setIconPreview(null);
+    setForm({ ...form, icon_url: '' });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   async function handleSave(e) {
@@ -67,35 +94,49 @@ export default function AdminProductsPage() {
     setSaving(true);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
-        alert('Demo mode: Produk tidak bisa disimpan. Hubungkan Supabase terlebih dahulu.');
-        setSaving(false);
-        setShowModal(false);
-        return;
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('slug', form.slug || form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+      formData.append('description', form.description);
+      formData.append('price', form.price);
+      formData.append('duration', form.duration);
+      formData.append('category', form.category);
+      formData.append('is_active', form.is_active.toString());
+
+      if (iconFile) {
+        formData.append('icon_file', iconFile);
       }
 
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-
-      const productData = {
-        name: form.name,
-        slug: form.slug || form.name.toLowerCase().replace(/\s+/g, '-'),
-        description: form.description,
-        price: parseInt(form.price),
-        duration: form.duration,
-        category: form.category,
-        icon_url: form.icon_url || null,
-        is_active: form.is_active,
-      };
-
       if (editingProduct) {
-        await supabase.from('products').update(productData).eq('id', editingProduct.id);
+        formData.append('id', editingProduct.id);
+        formData.append('existing_icon_url', form.icon_url || '');
+
+        const res = await fetch('/api/admin/products', {
+          method: 'PUT',
+          body: formData,
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          alert(`Gagal update: ${json.error}`);
+          setSaving(false);
+          return;
+        }
       } else {
-        await supabase.from('products').insert(productData);
+        const res = await fetch('/api/admin/products', {
+          method: 'POST',
+          body: formData,
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          alert(`Gagal tambah: ${json.error}`);
+          setSaving(false);
+          return;
+        }
       }
 
       setShowModal(false);
+      setIconFile(null);
+      setIconPreview(null);
       fetchProducts();
     } catch (err) {
       console.error(err);
@@ -106,13 +147,14 @@ export default function AdminProductsPage() {
 
   async function toggleActive(product) {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url') return;
-
-      const { createClientBrowser } = await import('@/lib/supabase');
-      const supabase = createClientBrowser();
-      await supabase.from('products').update({ is_active: !product.is_active }).eq('id', product.id);
-      fetchProducts();
+      const res = await fetch('/api/admin/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: product.id, is_active: !product.is_active }),
+      });
+      if (res.ok) {
+        fetchProducts();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -149,7 +191,25 @@ export default function AdminProductsPage() {
             <tbody>
               {products.map((product) => (
                 <tr key={product.id}>
-                  <td style={{ fontWeight: 'var(--fw-medium)' }}>{product.name}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: 'var(--radius-md)',
+                        background: 'var(--bg-surface-2)', border: '1px solid var(--border)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        overflow: 'hidden', flexShrink: 0,
+                      }}>
+                        {product.icon_url ? (
+                          <img src={product.icon_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: 'var(--text-11)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-tertiary)' }}>
+                            {product.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontWeight: 'var(--weight-medium)' }}>{product.name}</span>
+                    </div>
+                  </td>
                   <td>
                     <span className="badge badge--info">{product.category}</span>
                   </td>
@@ -183,14 +243,14 @@ export default function AdminProductsPage() {
         <div className="empty-state">
           <div className="empty-state__icon">📦</div>
           <h3 className="empty-state__title">Belum ada produk</h3>
-          <p className="empty-state__text">Klik tombol "Tambah Produk" untuk mulai.</p>
+          <p className="empty-state__text">Klik tombol &quot;Tambah Produk&quot; untuk mulai.</p>
         </div>
       )}
 
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
             <div className="modal__header">
               <h3 className="modal__title">
                 {editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}
@@ -201,6 +261,60 @@ export default function AdminProductsPage() {
             </div>
 
             <form onSubmit={handleSave}>
+              {/* Icon Upload */}
+              <div className="form-group">
+                <label className="form-label">Ikon / Gambar Produk</label>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 'var(--sp-4)',
+                }}>
+                  <div style={{
+                    width: '64px', height: '64px', borderRadius: 'var(--radius-lg)',
+                    background: 'var(--bg-surface-2)', border: '2px dashed var(--border-hover)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden', flexShrink: 0, position: 'relative',
+                    cursor: 'pointer',
+                  }} onClick={() => fileInputRef.current?.click()}>
+                    {iconPreview ? (
+                      <img src={iconPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--text-quaternary)' }}>
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                      <button
+                        type="button"
+                        className="btn btn--secondary btn--sm"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        📷 Upload Gambar
+                      </button>
+                      {iconPreview && (
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm"
+                          onClick={removeIcon}
+                        >
+                          🗑️ Hapus
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 'var(--text-11)', color: 'var(--text-quaternary)', marginTop: 'var(--sp-1)' }}>
+                      PNG, JPG, WebP, SVG. Maks 2MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Nama Produk</label>
                 <input
@@ -232,7 +346,7 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
                 <div className="form-group">
                   <label className="form-label">Harga (Rp)</label>
                   <input
@@ -269,17 +383,7 @@ export default function AdminProductsPage() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">URL Ikon (opsional)</label>
-                <input
-                  className="form-input"
-                  placeholder="https://example.com/icon.png"
-                  value={form.icon_url}
-                  onChange={(e) => setForm({ ...form, icon_url: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
                 <input
                   type="checkbox"
                   id="is_active"
