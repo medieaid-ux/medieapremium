@@ -56,7 +56,6 @@ export default function HomePage() {
       {/* ─── Hero ─── */}
       <section className="hero">
         <div className="container">
-          <span className="hero__eyebrow">Sistem Terotomatisasi · Pengiriman Instan</span>
 
           <h1 className="hero__title">
             Akses Layanan Digital Premium Secara{' '}

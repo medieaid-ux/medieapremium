@@ -27,7 +27,7 @@ export default function CheckoutPage() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', whatsapp: '' });
+  const [form, setForm] = useState({ name: '', whatsapp: '', email: '', notes: '' });
   const [errors, setErrors] = useState({});
   const [snapReady, setSnapReady] = useState(false);
 
@@ -85,6 +85,7 @@ export default function CheckoutPage() {
           buyerName: form.name,
           buyerEmail: form.email,
           buyerWhatsapp: form.whatsapp,
+          buyerNotes: form.notes,
         }),
       });
 
@@ -230,6 +231,24 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="form-group">
+                    <label className="form-label" htmlFor="whatsapp">
+                      Nomor WhatsApp
+                    </label>
+                    <input
+                      id="whatsapp"
+                      type="tel"
+                      className={`form-input ${errors.whatsapp ? 'form-input--error' : ''}`}
+                      placeholder="08xxxxxxxxxx"
+                      value={form.whatsapp}
+                      onChange={(e) => {
+                        setForm({ ...form, whatsapp: e.target.value });
+                        if (errors.whatsapp) setErrors({ ...errors, whatsapp: '' });
+                      }}
+                    />
+                    {errors.whatsapp && <p className="form-error">{errors.whatsapp}</p>}
+                  </div>
+
+                  <div className="form-group">
                     <label className="form-label" htmlFor="email">
                       Email
                     </label>
@@ -248,21 +267,17 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="whatsapp">
-                      Nomor WhatsApp
+                    <label className="form-label" htmlFor="notes">
+                      Catatan <span style={{ color: 'var(--text-quaternary)', fontWeight: 'var(--weight-normal)' }}>(opsional)</span>
                     </label>
-                    <input
-                      id="whatsapp"
-                      type="tel"
-                      className={`form-input ${errors.whatsapp ? 'form-input--error' : ''}`}
-                      placeholder="08xxxxxxxxxx"
-                      value={form.whatsapp}
-                      onChange={(e) => {
-                        setForm({ ...form, whatsapp: e.target.value });
-                        if (errors.whatsapp) setErrors({ ...errors, whatsapp: '' });
-                      }}
+                    <textarea
+                      id="notes"
+                      className="form-input form-textarea"
+                      placeholder="Tambahkan catatan atau permintaan khusus..."
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      rows={3}
                     />
-                    {errors.whatsapp && <p className="form-error">{errors.whatsapp}</p>}
                   </div>
 
                   <button
