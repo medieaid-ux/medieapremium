@@ -51,19 +51,24 @@ export async function POST(request) {
     const orderNumber = generateOrderNumber();
 
     // Create order record
+    const orderData = {
+      order_number: orderNumber,
+      product_id: productId,
+      buyer_name: buyerName,
+      buyer_email: buyerEmail,
+      buyer_whatsapp: buyerWhatsapp,
+      amount: product.price,
+      status: 'pending',
+      midtrans_order_id: orderNumber,
+    };
+    // Only include buyer_notes if provided (column may not exist yet)
+    if (buyerNotes) {
+      orderData.buyer_notes = buyerNotes;
+    }
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        order_number: orderNumber,
-        product_id: productId,
-        buyer_name: buyerName,
-        buyer_email: buyerEmail,
-        buyer_whatsapp: buyerWhatsapp,
-        buyer_notes: buyerNotes || null,
-        amount: product.price,
-        status: 'pending',
-        midtrans_order_id: orderNumber,
-      })
+      .insert(orderData)
       .select()
       .single();
 
