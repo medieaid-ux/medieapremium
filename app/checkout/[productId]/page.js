@@ -161,7 +161,9 @@ export default function CheckoutPage() {
         <div className="checkout-page">
           <div className="container">
             <div className="empty-state">
-              <div className="empty-state__icon">🔍</div>
+              <div className="empty-state__icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
               <h3 className="empty-state__title">Produk tidak ditemukan</h3>
               <p className="empty-state__text">Produk yang kamu cari tidak tersedia.</p>
               <button className="btn btn--primary mt-6" onClick={() => router.push('/')}>
@@ -287,7 +289,7 @@ export default function CheckoutPage() {
                     disabled={submitting}
                     style={{ marginTop: 'var(--sp-4)' }}
                   >
-                    {submitting ? '' : '🔒 Bayar Sekarang'}
+                    {submitting ? '' : (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:'8px'}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Bayar Sekarang</>)}
                   </button>
 
                   <p
@@ -347,14 +349,13 @@ export default function CheckoutPage() {
                     {product.icon_url ? (
                       <img src={product.icon_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <span style={{ fontSize: '1.5rem' }}>
-                        {product.category === 'AI Tools'
-                          ? '🤖'
-                          : product.category === 'Streaming'
-                          ? '🎬'
-                          : product.category === 'Design'
-                          ? '🎨'
-                          : '⚡'}
+                      <span style={{
+                        fontSize: 'var(--text-11)',
+                        fontWeight: 'var(--weight-bold)',
+                        color: 'var(--accent)',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {product.name.slice(0, 2).toUpperCase()}
                       </span>
                     )}
                   </div>
@@ -417,13 +418,13 @@ export default function CheckoutPage() {
                 }}
               >
                 {[
-                  { icon: '🔒', text: 'Pembayaran Aman (Midtrans)' },
-                  { icon: '⚡', text: 'Pengiriman Instan Otomatis' },
-                  { icon: '📧', text: 'Kirim via Email & WhatsApp' },
-                  { icon: '🛡️', text: 'Garansi Akun' },
-                ].map((badge) => (
+                  { icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, text: 'Pembayaran Aman (Midtrans)' },
+                  { icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, text: 'Pengiriman Instan Otomatis' },
+                  { icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, text: 'Kirim via Email & WhatsApp' },
+                  { icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>, text: 'Garansi Akun' },
+                ].map((badge, i) => (
                   <div
-                    key={badge.text}
+                    key={i}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
