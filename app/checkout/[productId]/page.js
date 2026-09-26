@@ -132,7 +132,8 @@ export default function CheckoutPage() {
 
   const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
   const hasMidtransKey = midtransClientKey && midtransClientKey !== 'your_client_key';
-  const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  // Detect production: production client keys DON'T contain 'SB'
+  const isProduction = hasMidtransKey && !midtransClientKey.includes('SB');
   const snapUrl = isProduction
     ? 'https://app.midtrans.com/snap/snap.js'
     : 'https://app.sandbox.midtrans.com/snap/snap.js';
