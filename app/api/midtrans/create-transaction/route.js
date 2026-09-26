@@ -27,6 +27,11 @@ export async function POST(request) {
       .single();
 
     if (productError || !product) {
+      console.error('Product fetch failed:', {
+        productId,
+        productError,
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30),
+      });
       return NextResponse.json(
         { error: 'Produk tidak ditemukan atau tidak aktif' },
         { status: 404 }
